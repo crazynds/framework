@@ -1026,22 +1026,20 @@ class Container implements ArrayAccess, ContainerContract
             return $this->notInstantiable($concrete);
         }
 
-        $this->buildStack[] = $concrete;
-
         $constructor = $reflector->getConstructor();
 
         // If there are no constructors, that means there are no dependencies then
         // we can just resolve the instances of the objects right away, without
         // resolving any other types or dependencies out of these containers.
         if (is_null($constructor)) {
-            array_pop($this->buildStack);
-
             $this->fireAfterResolvingAttributeCallbacks(
                 $reflector->getAttributes(), $instance = new $concrete
             );
 
             return $instance;
         }
+        
+        $this->buildStack[] = $concrete;
 
         $dependencies = $constructor->getParameters();
 
