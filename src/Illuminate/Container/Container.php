@@ -1223,7 +1223,7 @@ class Container implements ArrayAccess, ContainerContract
         $abstract = $this->getAlias($className);
 
         if (! is_array($concrete = $this->getContextualConcrete($abstract))) {
-            return $this->make($className);
+            return $this->resolve($className);
         }
 
         return array_map(fn ($abstract) => $this->resolve($abstract), $concrete);
