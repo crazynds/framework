@@ -9,6 +9,7 @@ use Illuminate\Database\Schema\Builder;
 use Illuminate\Database\Schema\ForeignIdColumnDefinition;
 use Illuminate\Database\Schema\Grammars\PostgresGrammar;
 use Illuminate\Database\Schema\PostgresBuilder;
+use Illuminate\Tests\Database\Fixtures\Enums\Foo;
 use Mockery as m;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\TestWith;
@@ -386,6 +387,26 @@ class DatabasePostgresSchemaGrammarTest extends TestCase
         $this->assertSame('create index "geo_coordinates_spatialindex" on "geo" using gist ("coordinates")', $statements[1]);
     }
 
+    public function testAddingSpatialIndexWithOperatorClass()
+    {
+        $blueprint = new Blueprint($this->getConnection(), 'geo');
+        $blueprint->spatialIndex('coordinates', 'my_index', 'point_ops');
+        $statements = $blueprint->toSql();
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('create index "my_index" on "geo" using gist ("coordinates" point_ops)', $statements[0]);
+    }
+
+    public function testAddingSpatialIndexWithOperatorClassMultipleColumns()
+    {
+        $blueprint = new Blueprint($this->getConnection(), 'geo');
+        $blueprint->spatialIndex(['coordinates', 'location'], 'my_index', 'point_ops');
+        $statements = $blueprint->toSql();
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('create index "my_index" on "geo" using gist ("coordinates" point_ops, "location" point_ops)', $statements[0]);
+    }
+
     public function testAddingRawIndex()
     {
         $blueprint = new Blueprint($this->getConnection(), 'users');
@@ -698,10 +719,12 @@ class DatabasePostgresSchemaGrammarTest extends TestCase
     {
         $blueprint = new Blueprint($this->getConnection(), 'users');
         $blueprint->enum('role', ['member', 'admin']);
+        $blueprint->enum('status', Foo::cases());
         $statements = $blueprint->toSql();
 
-        $this->assertCount(1, $statements);
+        $this->assertCount(2, $statements);
         $this->assertSame('alter table "users" add column "role" varchar(255) check ("role" in (\'member\', \'admin\')) not null', $statements[0]);
+        $this->assertSame('alter table "users" add column "status" varchar(255) check ("status" in (\'bar\')) not null', $statements[1]);
     }
 
     public function testAddingDate()
